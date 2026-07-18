@@ -5,6 +5,10 @@ A Python MVP for CS625 Object Oriented Software final project.
 
 ## Requirements
 - Python 3.10+ (standard library only)
+```
+conda create -n py310 python=3.10
+conda activate py310
+```
 
 ## Run the interactive menu
 ```
