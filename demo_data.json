@@ -1,0 +1,70 @@
+{
+  "users": [
+    {
+      "user_id": "user_105d0e79",
+      "name": "Alice"
+    },
+    {
+      "user_id": "user_68d09642",
+      "name": "Bob"
+    },
+    {
+      "user_id": "user_9eafd85a",
+      "name": "Carol"
+    }
+  ],
+  "households": [
+    {
+      "household_id": "hh_b7e744f5",
+      "name": "Apt 4B",
+      "member_ids": [
+        "user_105d0e79",
+        "user_68d09642",
+        "user_9eafd85a"
+      ]
+    }
+  ],
+  "subscriptions": [
+    {
+      "subscription_id": "sub_a1791b4b",
+      "platform": "Netflix",
+      "monthly_cost": "15.99",
+      "owner_id": "user_9eafd85a",
+      "renewal_at": "2026-07-19T02:50:53.701325+00:00",
+      "household_id": "hh_b7e744f5",
+      "status": "active",
+      "split_percentages": {
+        "user_105d0e79": "50",
+        "user_68d09642": "25",
+        "user_9eafd85a": "25"
+      }
+    },
+    {
+      "subscription_id": "sub_97b1904b",
+      "platform": "Spotify",
+      "monthly_cost": "9.99",
+      "owner_id": "user_68d09642",
+      "renewal_at": "2026-07-28T03:50:53.701962+00:00",
+      "household_id": "hh_b7e744f5",
+      "status": "active",
+      "split_percentages": {
+        "user_105d0e79": "33.34",
+        "user_68d09642": "33.33",
+        "user_9eafd85a": "33.33"
+      }
+    }
+  ],
+  "payments": [
+    {
+      "subscription_id": "sub_a1791b4b",
+      "platform": "Netflix",
+      "paid_at": "2026-07-18T03:50:53.702168+00:00",
+      "total_amount": "15.99",
+      "shares": {
+        "user_105d0e79": "8.00",
+        "user_68d09642": "4.00",
+        "user_9eafd85a": "3.99"
+      }
+    }
+  ]
+}
