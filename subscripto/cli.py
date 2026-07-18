@@ -42,21 +42,64 @@ def _ensure_setup(mgr: SubscriptionManager) -> None:
         print(f"  {mgr.users[uid]}")
 
 
-def _list_users(mgr: SubscriptionManager) -> None:
-    for u in mgr.users.values():
-        print(f"  {u}")
+def _list_users(mgr: SubscriptionManager) -> list[str]:
+    """Print numbered user list and return the ordered id list."""
+    ids = list(mgr.users.keys())
+    for i, uid in enumerate(ids, start=1):
+        print(f"  {i}. {mgr.users[uid].name}  (id={uid})")
+    return ids
 
 
-def _list_subs(mgr: SubscriptionManager) -> None:
+def _pick_user(mgr: SubscriptionManager, prompt: str) -> str | None:
+    ids = _list_users(mgr)
+    raw = _prompt(f"{prompt} (row # or full id): ")
+    if raw.isdigit():
+        idx = int(raw) - 1
+        if 0 <= idx < len(ids):
+            return ids[idx]
+        print(f"  no row {raw}.")
+        return None
+    if raw in mgr.users:
+        return raw
+    print(f"  unknown user '{raw}'.")
+    return None
+
+
+def _list_subs(mgr: SubscriptionManager) -> list[str]:
+    """Print numbered subscription list and return the ordered id list."""
     if not mgr.subscriptions:
-        print("  (none)")
-        return
-    for s in mgr.subscriptions.values():
+        print("  (no subscriptions yet)")
+        return []
+    ids = list(mgr.subscriptions.keys())
+    print(f"  {'#':<3} {'ID':<14} {'Platform':<12} {'Cost':<8} "
+          f"{'Status':<11} {'Owner':<10} Renews")
+    print("  " + "-" * 78)
+    for i, sid in enumerate(ids, start=1):
+        s = mgr.subscriptions[sid]
         print(
-            f"  {s.subscription_id}  {s.platform:12s}  ${s.monthly_cost}  "
-            f"[{s.status.value}]  owner={mgr.users[s.owner_id].name}  "
-            f"renews={s.renewal_at.isoformat()}"
+            f"  {i:<3} {s.subscription_id:<14} {s.platform:<12} "
+            f"${s.monthly_cost:<7} [{s.status.value:<9}] "
+            f"{mgr.users[s.owner_id].name:<10} {s.renewal_at.isoformat()}"
         )
+    return ids
+
+
+def _pick_sub(mgr: SubscriptionManager, verb: str) -> str | None:
+    """Show subs, prompt for either a row number or a full id."""
+    ids = _list_subs(mgr)
+    if not ids:
+        return None
+    raw = _prompt(f"{verb} which? (row # or full id): ")
+    if raw.isdigit():
+        idx = int(raw) - 1
+        if 0 <= idx < len(ids):
+            return ids[idx]
+        print(f"  no row {raw}.")
+        return None
+    if raw in mgr.subscriptions:
+        return raw
+    print(f"  unknown id '{raw}'.")
+    return None
 
 
 def _add_subscription(mgr: SubscriptionManager) -> None:
@@ -64,8 +107,9 @@ def _add_subscription(mgr: SubscriptionManager) -> None:
     platform = _prompt("Platform (e.g. Netflix): ")
     cost = Decimal(_prompt("Monthly cost (e.g. 15.99): "))
     print("Members:")
-    _list_users(mgr)
-    owner_id = _prompt("Owner user_id: ")
+    owner_id = _pick_user(mgr, "Owner")
+    if not owner_id:
+        return
     renew_raw = _prompt(
         "Renewal date (YYYY-MM-DD HH:MM, UTC, blank=24h from now): "
     )
@@ -85,7 +129,9 @@ def _add_subscription(mgr: SubscriptionManager) -> None:
     sub = mgr.add_subscription(
         platform, cost, owner_id, renewal, hh_id, splits
     )
-    print(f"Added {sub.platform} ({sub.subscription_id}).")
+    mgr.save()
+    print(f"\nAdded {sub.platform} (id={sub.subscription_id}). Current list:")
+    _list_subs(mgr)
 
 
 def _dashboard(mgr: SubscriptionManager) -> None:
@@ -99,25 +145,34 @@ def _dashboard(mgr: SubscriptionManager) -> None:
 
 
 def _pause(mgr: SubscriptionManager) -> None:
-    _list_subs(mgr)
-    sid = _prompt("Subscription id to pause: ")
+    sid = _pick_sub(mgr, "Pause")
+    if not sid:
+        return
     mgr.pause(sid)
-    print("Paused.")
+    mgr.save()
+    print(f"Paused {mgr.subscriptions[sid].platform}.")
 
 
 def _transfer(mgr: SubscriptionManager) -> None:
-    _list_subs(mgr)
-    sid = _prompt("Subscription id: ")
-    _list_users(mgr)
-    new_owner = _prompt("New owner user_id: ")
+    sid = _pick_sub(mgr, "Transfer")
+    if not sid:
+        return
+    print("Members:")
+    new_owner = _pick_user(mgr, "New owner")
+    if not new_owner:
+        return
     mgr.transfer_ownership(sid, new_owner)
-    print("Ownership transferred.")
+    mgr.save()
+    sub = mgr.subscriptions[sid]
+    print(f"Ownership of {sub.platform} transferred to {mgr.users[new_owner].name}.")
 
 
 def _bill_split(mgr: SubscriptionManager) -> None:
-    _list_subs(mgr)
-    sid = _prompt("Subscription id: ")
+    sid = _pick_sub(mgr, "Bill split for")
+    if not sid:
+        return
     shares = mgr.generate_bill_split(sid)
+    mgr.save()
     sub = mgr.subscriptions[sid]
     print(f"\nBill Split for {sub.platform} (${sub.monthly_cost}):")
     for uid, amount in shares.items():
